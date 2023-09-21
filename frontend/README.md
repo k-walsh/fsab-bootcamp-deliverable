@@ -1,2 +1,1 @@
-# A really cool web app!
-Describe your work here :)
+# App to browse courses and add/remove them from your cart

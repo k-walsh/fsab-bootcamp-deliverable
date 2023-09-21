@@ -26,6 +26,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.get("/all-courses", async (req, res) => {
   const allCourses = db.collection("all-courses");
   const result = await allCourses.find({}).toArray();
+  console.log("got all courses");
   return res.json(result);
 });
 
@@ -56,7 +57,7 @@ app.get("/my-courses", async (req, res) => {
 });
 
 // route handler that adds a new course to cart
-app.post("my-courses", async (req, res) => {
+app.post("/my-courses", async (req, res) => {
   const courseData = req.body;
   const myCourses = db.collection("my-courses");
   const course = {
@@ -66,24 +67,46 @@ app.post("my-courses", async (req, res) => {
     img: courseData.img,
   };
 
-  try {
-    await myCourses.insertOne(course);
-    return res.json(course);
-  } catch (e) {
-    return res.status(500).send();
+  const findCourse = await myCourses.find({ code: courseData.code }).toArray();
+
+  if (findCourse.length === 0) {
+    try {
+      await myCourses.insertOne(course);
+      return res.json(course);
+    } catch (e) {
+      return res.status(500).send();
+    }
+  } else {
+    return res.send("course already added to cart");
   }
 });
 
 // route handler that deletes the course from cart
-app.delete("my-courses/:courseCode", async (req, res) => {
+app.delete("/my-courses/:courseCode", async (req, res) => {
   const myCourses = db.collection("my-courses");
   const courseCode = req.params.courseCode;
 
+  console.log("in backend, attempting to delete", courseCode);
   try {
-    const result = await myCourses.deleteOne({ courseCode });
+    const result = await myCourses.deleteOne({ code: courseCode });
+    console.log("result", result);
     return res.json(result);
   } catch (e) {
+    console.log("error", e);
     return res.status(404).send(`no course found with id ${courseCode}`);
+  }
+});
+
+// route handler that deletes all the courses from cart (clear cart)
+app.delete("/my-courses", async (req, res) => {
+  const myCourses = db.collection("my-courses");
+  console.log("deleting courses");
+  try {
+    const result = await myCourses.deleteMany({});
+    console.log("all courses deleted");
+    return res.json(result);
+  } catch (e) {
+    return res.status(404).send(e);
   }
 });
 
